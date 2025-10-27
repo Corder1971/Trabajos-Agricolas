@@ -1,0 +1,163 @@
+' ============================================
+' CÓDIGO EN UN MÓDULO ESTÁNDAR
+' ============================================
+' Este código va en Module1 (o el módulo que ya tienes)
+
+Sub CargarFacturaExistente()
+    ' Esta macro se ejecuta cuando haces clic en el botón
+    Dim numFactura As String
+    Dim wsFactura As Worksheet
+    
+    Set wsFactura = ThisWorkbook.Sheets("Factura")
+    
+    ' Pedir el número de factura mediante un cuadro de diálogo
+    numFactura = InputBox("Escribe el número de factura a cargar:" & vbCrLf & _
+                          "(Por ejemplo: A0001, A0002, etc.)", _
+                          "Buscar Factura", _
+                          "A")
+    
+    ' Si el usuario cancela o no escribe nada
+    If numFactura = "" Or numFactura = "A" Then
+        Exit Sub
+    End If
+    
+    ' Limpiar espacios
+    numFactura = Trim(numFactura)
+    
+    ' Cargar la factura
+    CargarFactura numFactura
+End Sub
+
+Sub CargarFactura(numFactura As String)
+    Dim wsTrabajos As Worksheet
+    Dim wsFactura As Worksheet
+    Dim wsClientes As Worksheet
+    Dim ultimaFila As Long
+    Dim i As Long
+    Dim filaDestino As Long
+    Dim encontrado As Boolean
+    Dim primeraLinea As Boolean
+    Dim nombreCliente As String
+    
+    ' Referencias a las hojas
+    Set wsTrabajos = ThisWorkbook.Sheets("Trabajos")
+    Set wsFactura = ThisWorkbook.Sheets("Factura")
+    Set wsClientes = ThisWorkbook.Sheets("Clientes")
+    
+    ' Buscar última fila en Trabajos
+    ultimaFila = wsTrabajos.Cells(wsTrabajos.Rows.Count, "A").End(xlUp).Row
+    
+    encontrado = False
+    primeraLinea = True
+    filaDestino = 7 ' Primera fila de la tabla de trabajos
+    
+    ' Limpiar tabla antes de cargar
+    LimpiarTablaFactura
+    
+    ' Buscar todas las líneas con ese número de factura
+    For i = 2 To ultimaFila ' Empieza en 2 para saltar encabezados
+        If wsTrabajos.Cells(i, 1).Value = numFactura Then
+            encontrado = True
+            
+            ' Si es la primera línea, cargar datos de cabecera
+            If primeraLinea Then
+                nombreCliente = wsTrabajos.Cells(i, 3).Value ' Nombre del cliente
+                
+                ' Cliente
+                wsFactura.Range("C2").Value = nombreCliente
+                
+                ' Buscar datos del cliente en la hoja Clientes
+                CargarDatosCliente nombreCliente, wsClientes, wsFactura
+                
+                ' Fecha
+                wsFactura.Range("G3").Value = wsTrabajos.Cells(i, 2).Value ' Fecha
+                
+                primeraLinea = False
+            End If
+            
+            ' Cargar línea de trabajo en la tabla
+            wsFactura.Cells(filaDestino, 1).Value = wsTrabajos.Cells(i, 4).Value ' Horas (columna A)
+            wsFactura.Cells(filaDestino, 3).Value = wsTrabajos.Cells(i, 5).Value ' Trabajos (columna C)
+            wsFactura.Cells(filaDestino, 4).Value = wsTrabajos.Cells(i, 6).Value ' Variedad (columna D)
+            wsFactura.Cells(filaDestino, 5).Value = wsTrabajos.Cells(i, 7).Value ' Partida (columna E)
+            wsFactura.Cells(filaDestino, 6).Value = wsTrabajos.Cells(i, 8).Value ' Parcela (columna F)
+            wsFactura.Cells(filaDestino, 7).Value = wsTrabajos.Cells(i, 9).Value ' Precio (columna G)
+            
+            filaDestino = filaDestino + 1
+        End If
+    Next i
+    
+    If encontrado Then
+        MsgBox "Factura " & numFactura & " cargada correctamente." & vbCrLf & _
+               "Puedes modificar los datos y hacer clic en GUARDAR para actualizar.", _
+               vbInformation, "Factura Encontrada"
+    Else
+        MsgBox "No se encontró la factura " & numFactura & " en la hoja Trabajos." & vbCrLf & _
+               "Esta es una factura nueva.", _
+               vbInformation, "Factura Nueva"
+    End If
+End Sub
+
+Sub CargarDatosCliente(nombreCliente As String, wsClientes As Worksheet, wsFactura As Worksheet)
+    Dim ultimaFilaClientes As Long
+    Dim i As Long
+    Dim encontrado As Boolean
+    
+    ' Buscar última fila en Clientes
+    ultimaFilaClientes = wsClientes.Cells(wsClientes.Rows.Count, "C").End(xlUp).Row
+    
+    encontrado = False
+    
+    ' Buscar el cliente por nombre
+    For i = 2 To ultimaFilaClientes ' Empieza en 2 para saltar encabezados
+        If UCase(Trim(wsClientes.Cells(i, 3).Value)) = UCase(Trim(nombreCliente)) Then
+            encontrado = True
+            
+            ' Cargar Teléfono
+            wsFactura.Range("E2").Value = wsClientes.Cells(i, 7).Value ' Columna G: Teléfono
+            
+            ' Cargar Dirección (Dirección + Número + Municipio)
+            Dim direccionCompleta As String
+            direccionCompleta = ""
+            
+            If wsClientes.Cells(i, 4).Value <> "" Then
+                direccionCompleta = wsClientes.Cells(i, 4).Value ' Dirección
+            End If
+            
+            If wsClientes.Cells(i, 5).Value <> "" Then
+                If direccionCompleta <> "" Then direccionCompleta = direccionCompleta & " "
+                direccionCompleta = direccionCompleta & wsClientes.Cells(i, 5).Value ' Número
+            End If
+            
+            If wsClientes.Cells(i, 6).Value <> "" Then
+                If direccionCompleta <> "" Then direccionCompleta = direccionCompleta & ", "
+                direccionCompleta = direccionCompleta & wsClientes.Cells(i, 6).Value ' Municipio
+            End If
+            
+            wsFactura.Range("C3").Value = direccionCompleta
+            
+            Exit For
+        End If
+    Next i
+    
+    If Not encontrado Then
+        wsFactura.Range("E2").Value = "" ' Teléfono vacío
+        wsFactura.Range("C3").Value = "" ' Dirección vacía
+    End If
+End Sub
+
+Sub LimpiarTablaFactura()
+    Dim wsFactura As Worksheet
+    Set wsFactura = ThisWorkbook.Sheets("Factura")
+    
+    ' Limpiar datos de cabecera
+    wsFactura.Range("C2").ClearContents ' Cliente
+    wsFactura.Range("E2").ClearContents ' Teléfono
+    wsFactura.Range("C3").ClearContents ' Dirección
+    wsFactura.Range("G3").ClearContents ' Fecha
+    
+    ' Limpiar tabla de trabajos (filas 7 a 17, columnas A, C-G)
+    wsFactura.Range("A7:A17").ClearContents ' Horas
+    wsFactura.Range("C7:G17").ClearContents ' Trabajos, Variedad, Partida, Parcela, Precio
+End Sub
+
