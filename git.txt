@@ -1,0 +1,4 @@
+cd C:\JOSE\Recibos campo
+git remote add origin https://github.com/Corder1971/Trabajos-Agricolas.git
+git branch -M main
+git push -u origin main
