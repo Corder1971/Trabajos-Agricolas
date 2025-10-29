@@ -1,0 +1,19 @@
+Sub BorrarDatos()
+    Dim respuesta As Integer
+    Dim celda As Range
+    
+    respuesta = MsgBox("Deseas borrar los datos?", vbYesNo + vbQuestion, "EXCEL+INFO")
+    If respuesta = vbYes Then
+        With ThisWorkbook.Sheets("Factura")
+            ' Borrar rangos específicos verificando si tienen fórmulas
+            For Each celda In .Range("B7:G15")  ' Ajusta el rango
+                If Not celda.HasFormula Then
+                    celda.ClearContents
+                End If
+            Next celda
+            
+            ' Borrar el cliente (C2) sin fórmula
+            .Range("C2").ClearContents
+        End With
+    End If
+End Sub
