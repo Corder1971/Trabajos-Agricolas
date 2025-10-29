@@ -1,0 +1,9 @@
+Función Nº de Fcatura
+
+=SI(Trabajos!J1="CodFactura";1;Trabajos!J1+1)
+=DESREF(A1;CONTARA(A$1:A$1048567)-1;0;CONTARA(A1:A1);1)
+=DESREF(A1;CONTARA(A$1:A$1048568)-1;0;CONTARA(A1:A1);1)
+
+Cuando ejecuto el boton Borrar, borra todos los campos (Factura para,Dirección,
+Teléfono,Horas,Trabajos,variedad,partida,Parcela y Precio), pero Nº de Fcatura y 
+Fecha no los borra
